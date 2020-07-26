@@ -156,9 +156,9 @@ export class Checkbox extends GenericList<string[], string[], CheckboxSettings> 
             line += '  ';
         }
 
-        // value
-        const value: string = item.name;
-        line += `${ isSelected ? value : dim( value ) }`;
+        // name
+        const name: string = this.formatValue( [ item.value ] );
+        line += `${ isSelected ? name : dim( name ) }`;
 
         this.writeLine( line );
     }

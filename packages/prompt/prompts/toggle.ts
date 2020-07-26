@@ -25,7 +25,7 @@ interface ToggleSettings extends GenericPromptSettings<boolean, string> {
 
 export class Toggle extends GenericPrompt<boolean, string, ToggleSettings> {
 
-    protected status: string = typeof this.settings.default !== 'undefined' ? this.format( this.settings.default ) : '';
+    protected status: string = typeof this.settings.default !== 'undefined' ? this.formatValue( this.settings.default ) : '';
 
     public static async prompt( options: string | ToggleOptions ): Promise<boolean> {
 

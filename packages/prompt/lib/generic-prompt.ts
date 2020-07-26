@@ -13,6 +13,7 @@ export interface GenericPromptOptions<T, V> {
     default?: T;
     validate?: ( value: V ) => ValidateResult;
     transform?: ( value: V ) => T | undefined;
+    format?: ( value: T ) => string;
     hint?: string;
     pointer?: string;
 }
@@ -117,14 +118,14 @@ export abstract class GenericPrompt<T, V, S extends GenericPromptSettings<T, V>,
         let message = ` ${ yellow( '?' ) } ${ bold( this.settings.message ) }`;
 
         if ( typeof this.settings.default !== 'undefined' ) {
-            message += dim( ` (${ this.format( this.settings.default ) })` );
+            message += dim( ` (${ this.formatValue( this.settings.default ) })` );
         }
 
         return message;
     }
 
     protected async getSuccessMessage( value: T ) {
-        return `${ await this.getMessage() } ${ this.settings.pointer } ${ green( this.format( value ) ) }`;
+        return `${ await this.getMessage() } ${ this.settings.pointer } ${ green( this.formatValue( value ) ) }`;
     }
 
     protected async read(): Promise<boolean> {
@@ -151,6 +152,10 @@ export abstract class GenericPrompt<T, V, S extends GenericPromptSettings<T, V>,
         }
 
         return false;
+    }
+
+    protected formatValue( value: T ): string {
+        return this.settings.format ? this.settings.format( value ) : this.format( value );
     }
 
     protected transformValue( value: V ): T | undefined {
