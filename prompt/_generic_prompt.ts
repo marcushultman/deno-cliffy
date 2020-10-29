@@ -13,6 +13,7 @@ export interface GenericPromptOptions<T, V> {
   transform?: (value: V) => T | undefined;
   hint?: string;
   pointer?: string;
+  exit?: () => void;
 }
 
 export interface GenericPromptSettings<T, V>
