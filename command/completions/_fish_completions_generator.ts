@@ -138,7 +138,7 @@ ${this.generateCompletions(this.cmd).trim()}
   }
 
   private getCompletionCommand(cmd: string): string {
-    return `'(${this.cmd.getName()} completions complete ${cmd.trim()})'`;
+    return `'(set cmd (commandline -p); ${this.cmd.getName()} completions complete --cmd "$cmd" ${cmd.trim()})'`;
   }
 }
 

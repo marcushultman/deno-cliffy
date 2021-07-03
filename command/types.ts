@@ -190,6 +190,26 @@ export interface ICompletion<
   complete: ICompleteHandler<O, A, G, PG, P>;
 }
 
+/** Completion arguments. */
+export interface ICompleteArguments<
+// deno-lint-ignore no-explicit-any
+O extends Record<string, any> | void = any,
+// deno-lint-ignore no-explicit-any
+A extends Array<unknown> = any,
+// deno-lint-ignore no-explicit-any
+G extends Record<string, any> | void = any,
+// deno-lint-ignore no-explicit-any
+PG extends Record<string, any> | void = any,
+// deno-lint-ignore no-explicit-any
+P extends Command | undefined = any,
+> {
+  options: PG & G & O;
+  args: A;
+  literal: string[];
+  cmd: Command<O, A, G, PG, P>;
+  parent?: Command;
+}
+
 export type CompleteHandlerResult =
   | Array<string | number>
   | Promise<Array<string | number>>;
@@ -208,7 +228,7 @@ export type ICompleteHandler<
   PG extends Record<string, any> | void = any,
   // deno-lint-ignore no-explicit-any
   P extends Command | undefined = any,
-> = (cmd: Command<O, A, G, PG, P>, parent?: Command) => CompleteHandlerResult;
+> = (args: ICompleteArguments<O, A, G, PG, P>) => CompleteHandlerResult;
 
 /** Help callback method to print the help. Invoked by the `--help` option and `help` command and the `.getHelp()` and `.showHelp()` method's. */
 export type IHelpHandler<

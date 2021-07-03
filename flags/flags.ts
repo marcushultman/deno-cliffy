@@ -158,7 +158,9 @@ export function parseFlags<O extends Record<string, any> = Record<string, any>>(
         if (typeof option.default !== "undefined") {
           flags[propName] = getDefaultValue(option);
         } else if (args[argIndex].requiredValue) {
-          throw new MissingOptionValue(option.name);
+          if (!opts.allowPartial) {
+            throw new MissingOptionValue(option.name);
+          }
         } else {
           flags[propName] = true;
         }
@@ -327,6 +329,7 @@ export function parseFlags<O extends Record<string, any> = Record<string, any>>(
       flags,
       opts.knownFlaks,
       opts.allowEmpty,
+      opts.allowPartial,
       optionNames,
     );
   }

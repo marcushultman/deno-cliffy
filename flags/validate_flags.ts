@@ -32,6 +32,7 @@ export function validateFlags(
   values: Record<string, unknown>,
   _knownFlaks?: Record<string, unknown>,
   allowEmpty?: boolean,
+  allowPartial?: boolean,
   optionNames: Record<string, string> = {},
 ): void {
   const defaultValues: Record<string, boolean> = {};
@@ -125,37 +126,41 @@ export function validateFlags(
 
     const isArray = (option.args?.length || 0) > 1;
 
-    option.args?.forEach((arg: IFlagArgument, i: number) => {
-      if (
-        arg.requiredValue &&
-        (
-          typeof values[name] === "undefined" ||
-          (isArray &&
-            typeof (values[name] as Array<unknown>)[i] === "undefined")
-        )
-      ) {
-        throw new MissingOptionValue(option.name);
-      }
-    });
+    if (!allowPartial) {
+      option.args?.forEach((arg: IFlagArgument, i: number) => {
+        if (
+          arg.requiredValue &&
+          (
+            typeof values[name] === "undefined" ||
+            (isArray &&
+              typeof (values[name] as Array<unknown>)[i] === "undefined")
+          )
+        ) {
+          throw new MissingOptionValue(option.name);
+        }
+      });
+    }
   }
 
-  for (const option of flags) {
-    if (option.required && !(paramCaseToCamelCase(option.name) in values)) {
-      if (
-        (
-          !option.conflicts ||
-          !option.conflicts.find((flag: string) => !!values[flag])
-        ) &&
-        !options.find((opt) =>
-          opt.option?.conflicts?.find((flag: string) => flag === option.name)
-        )
-      ) {
-        throw new MissingRequiredOption(option.name);
+  if (!allowPartial) {
+    for (const option of flags) {
+      if (option.required && !(paramCaseToCamelCase(option.name) in values)) {
+        if (
+          (
+            !option.conflicts ||
+            !option.conflicts.find((flag: string) => !!values[flag])
+          ) &&
+          !options.find((opt) =>
+            opt.option?.conflicts?.find((flag: string) => flag === option.name)
+          )
+        ) {
+          throw new MissingRequiredOption(option.name);
+        }
       }
     }
   }
 
-  if (keys.length === 0 && !allowEmpty) {
+  if (keys.length === 0 && !allowEmpty && !allowPartial) {
     throw new NoArguments();
   }
 }

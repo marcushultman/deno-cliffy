@@ -45,6 +45,7 @@ import type {
   IAction,
   IArgument,
   ICommandOption,
+  ICompleteArguments,
   ICompleteHandler,
   ICompleteOptions,
   ICompletion,
@@ -587,9 +588,8 @@ export class Command<
         typeof handler.values !== "undefined")
     ) {
       const completeHandler: ICompleteHandler = (
-        cmd: Command,
-        parent?: Command,
-      ) => handler.complete?.(cmd, parent) || [];
+        args: ICompleteArguments,
+      ) => handler.complete?.(args) || [];
       this.complete(name, completeHandler, options);
     }
 
@@ -853,11 +853,17 @@ export class Command<
    * Parse command line arguments and execute matched command.
    * @param args Command line args to parse. Ex: `cmd.parse( Deno.args )`
    * @param dry Execute command after parsed.
+   * @param allowPartial Allow parsing partially written command.
    */
   public async parse(
     args: string[] = Deno.args,
     dry?: boolean,
+    allowPartial = false,
   ): Promise<IParseResult<CO, CA, CG, PG, P>> {
+
+    // allowPartial forces dry run
+    dry = dry || allowPartial;
+
     try {
       this.reset();
       this.registerDefaults();
@@ -870,6 +876,7 @@ export class Command<
         return await subCommand.parse(
           this.rawArgs.slice(1),
           dry,
+          allowPartial,
         ) as IParseResult<CO, CA, CG, PG, P>;
       }
 
@@ -895,11 +902,12 @@ export class Command<
       } else {
         const { action, flags, unknown, literal } = this.parseFlags(
           this.rawArgs,
+          allowPartial,
         );
 
         this.literalArgs = literal;
 
-        const params = this.parseArguments(unknown, flags);
+        const params = this.parseArguments(unknown, flags, allowPartial);
 
         await this.validateEnvVars();
 
@@ -918,8 +926,12 @@ export class Command<
         return await this.execute(flags as PG & CG & CO, ...params);
       }
     } catch (error) {
-      throw this.error(error);
+      throw this.error(error, dry);
     }
+  }
+
+  public parsePartial(args: string[] = Deno.args) {
+    return this.parse(args, true, true);
   }
 
   /** Register default options like `--version` and `--help`. */
@@ -1104,12 +1116,14 @@ export class Command<
    */
   protected parseFlags(
     args: string[],
+    allowPartial: boolean,
   ): IFlagsResult & { action?: IAction } {
     try {
       let action: IAction | undefined;
       const result = parseFlags(args, {
         stopEarly: this._stopEarly,
         allowEmpty: this._allowEmpty,
+        allowPartial,
         flags: this.getOptions(true),
         parse: (type: ITypeInfo) => this.parseType(type),
         option: (option: IFlagOptions) => {
@@ -1173,7 +1187,7 @@ export class Command<
    * @param args  Raw command line arguments.
    * @param flags Parsed command line options.
    */
-  protected parseArguments(args: string[], flags: Record<string, unknown>): CA {
+  protected parseArguments(args: string[], flags: Record<string, unknown>, allowPartial: boolean): CA {
     const params: Array<unknown> = [];
 
     // remove array reference
@@ -1199,14 +1213,14 @@ export class Command<
             this.getOption(name, true)?.standalone
           );
 
-          if (!hasStandaloneOption) {
+          if (!hasStandaloneOption && !allowPartial) {
             throw new MissingArguments(required);
           }
         }
       } else {
         for (const expectedArg of this.getArguments()) {
           if (!args.length) {
-            if (expectedArg.optionalValue) {
+            if (expectedArg.optionalValue || allowPartial) {
               break;
             }
             throw new MissingArgument(`Missing argument: ${expectedArg.name}`);
@@ -1248,13 +1262,14 @@ export class Command<
   }
 
   /**
-   * Handle error. If `throwErrors` is enabled the error will be returned,
-   * otherwise a formatted error message will be printed and `Deno.exit(1)`
-   * will be called.
+   * Handle error. If `throwErrors` is enabled or `dry` is true the error
+   * will be returned, otherwise a formatted error message will be printed
+   * and `Deno.exit(1)` will be called.
    * @param error Error to handle.
+   * @param dry If this is a dry run.
    */
-  protected error(error: Error): Error {
-    if (this.shouldThrowErrors() || !(error instanceof ValidationError)) {
+  protected error(error: Error, dry: boolean): Error {
+    if (dry || this.shouldThrowErrors() || !(error instanceof ValidationError)) {
       return error;
     }
     this.showHelp();

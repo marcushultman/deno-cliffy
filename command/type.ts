@@ -1,6 +1,7 @@
 import type { Command } from "./command.ts";
 import type {
   CompleteHandlerResult,
+  ICompleteArguments,
   ITypeInfo,
   ValuesHandlerResult,
 } from "./types.ts";
@@ -46,9 +47,6 @@ export abstract class Type<T> {
    * values from the values method are used.
    */
   public complete?(
-    // deno-lint-ignore no-explicit-any
-    cmd: Command<any, any, any, any, any>,
-    // deno-lint-ignore no-explicit-any
-    parent?: Command<any, any, any, any, any>,
+    args: ICompleteArguments<any, any, any, any, any>,
   ): CompleteHandlerResult;
 }

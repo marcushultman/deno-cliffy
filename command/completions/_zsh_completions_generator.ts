@@ -44,7 +44,7 @@ function __${replaceSpecialChars(name)}_complete {
   while _tags; do
     if _requested "$name"; then
       # shellcheck disable=SC2034
-      lines="$(${name} completions complete "\${action}" "\${@}")"
+      lines="$(${name} completions complete --cmd "\${original_words}" "\${action}" "\${@}")"
       values=("\${(ps:\\n:)lines}")
       if (( \${#values[@]} )); then
         while _next_label "$name" expl "$action"; do
@@ -80,7 +80,8 @@ compdef _${replaceSpecialChars(path)} ${path}
 function _${replaceSpecialChars(path)}() {` +
       (!command.getParent()
         ? `
-  local state`
+  local state
+  local original_words=$words`
         : "") +
       this.generateCommandCompletions(command, path) +
       this.generateSubCommandCompletions(command, path) +
